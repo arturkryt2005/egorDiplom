@@ -3,69 +3,88 @@ using egorDipl.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace egorDipl.API.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class UserController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class UserController : ControllerBase
+    private readonly SponsorsDbContext _context;
+
+    public UserController(SponsorsDbContext context)
     {
-        private readonly SponsorsDbContext _context;
+        _context = context;
+    }
 
-        public UserController(SponsorsDbContext context)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+    {
+        return await _context.User.ToListAsync();
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<User>> GetUser(int id)
+    {
+        var user = await _context.User.FindAsync(id);
+        if (user == null)
         {
-            _context = context;
+            return NotFound();
+        }
+        return user;
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<User>> PostUser(User user)
+    {
+        if (user == null)
+        {
+            return BadRequest("User is null");
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        // Проверяем, существует ли роль
+        var role = await _context.StaffRole.FindAsync(user.RoleId);
+        if (role == null)
         {
-            return await _context.User.ToListAsync();
+            return NotFound("Role not found");
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        if (user.CompanyId.HasValue)
         {
-            var user = await _context.User.FindAsync(id);
-            if (user == null)
+            var company = await _context.Company.FindAsync(user.CompanyId);
+            if (company == null)
             {
-                return NotFound();
+                return NotFound("Company not found");
             }
-            return user;
         }
 
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        _context.User.Add(user);
+        await _context.SaveChangesAsync();
+
+        return CreatedAtAction("GetUser", new { id = user.Id }, user);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutUser(int id, User user)
+    {
+        if (id != user.Id)
         {
-            _context.User.Add(user);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            return BadRequest();
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
+        _context.Entry(user).State = EntityState.Modified;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var user = await _context.User.FindAsync(id);
+        if (user == null)
         {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            return NotFound();
         }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var user = await _context.User.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.User.Remove(user);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
+        _context.User.Remove(user);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }

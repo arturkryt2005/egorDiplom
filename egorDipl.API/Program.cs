@@ -5,17 +5,13 @@ using System.Diagnostics;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Загрузка конфигурации из appsettings.json
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
-// Добавление контекста базы данных
 builder.Services.AddDbContext<SponsorsDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Добавление контроллеров
 builder.Services.AddControllers();
 
-// Добавление Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Sponsors API", Version = "v1" });
@@ -23,7 +19,6 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Настройка middleware
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

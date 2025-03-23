@@ -30,19 +30,19 @@ namespace egorDipl.Data
                 .HasMany(c => c.Events)
                 .WithOne(e => e.Organizer)
                 .HasForeignKey(e => e.OrganizerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<Company>()
                 .HasMany(c => c.Cooperations)
                 .WithOne(co => co.Organizer)
                 .HasForeignKey(co => co.OrganizerId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Cascade);  
 
             modelBuilder.Entity<Company>()
                 .HasMany(c => c.FeedBacks)
                 .WithOne(fb => fb.AboutCompany)
                 .HasForeignKey(fb => fb.AboutCompanyId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.SetNull); 
 
             modelBuilder.Entity<Company>()
                 .HasMany(c => c.RequestsForCooperation)
@@ -63,7 +63,7 @@ namespace egorDipl.Data
                 .HasOne(co => co.Sponsor)
                 .WithMany()
                 .HasForeignKey(co => co.SponsorId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<Cooperation>()
                 .HasOne(co => co.Event)
@@ -84,13 +84,13 @@ namespace egorDipl.Data
                 .HasOne(e => e.Sponsor)
                 .WithMany()
                 .HasForeignKey(e => e.SponsorId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.SetNull); 
 
             modelBuilder.Entity<Event>()
                 .HasOne(e => e.Status)
                 .WithMany(es => es.Events)
                 .HasForeignKey(e => e.StatusId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<FeedBack>()
                 .HasKey(fb => fb.Id);
@@ -108,7 +108,7 @@ namespace egorDipl.Data
                 .HasOne(rfc => rfc.Status)
                 .WithMany(rs => rs.RequestsForCooperation)
                 .HasForeignKey(rfc => rfc.StatusId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<User>()
                 .HasKey(u => u.Id);
@@ -117,7 +117,12 @@ namespace egorDipl.Data
                 .HasOne(u => u.Role)
                 .WithMany(sr => sr.Users)
                 .HasForeignKey(u => u.RoleId)
-                .OnDelete(DeleteBehavior.Cascade); 
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Company)
+                .WithMany(c => c.Users)
+                .HasForeignKey(u => u.CompanyId);
         }
     }
 }

@@ -1,0 +1,170 @@
+﻿@page "/users"
+@using egorDipl.Data.Models
+@inject HttpClient Http
+@rendermode InteractiveServer
+
+<h3>Пользователи</h3>
+
+<button class="primary" @onclick="AddUser">Добавить пользователя</button>
+
+@if (users == null)
+{
+    <p>Загрузка...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Фамилия</th>
+                <th>Имя</th>
+                <th>Отчество</th>
+                <th>Должность</th>
+                <th>Роль</th>
+                <th>Компания</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var user in users)
+            {
+                <tr>
+                    <td>@user.Id</td>
+                    <td>@user.Surname</td>
+                    <td>@user.Name</td>
+                    <td>@user.Patronymic</td>
+                    <td>@user.Post</td>
+                    <td>@GetRoleName(user.RoleId)</td>
+                    <td>@GetCompanyName(user.CompanyId)</td>
+                    <td>
+                        <button class="edit" @onclick="() => EditUser(user.Id)">Редактировать</button>
+                        <button class="delete" @onclick="() => DeleteUser(user.Id)">Удалить</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (showAddEditDialog)
+{
+    <div class="modal">
+        <div class="modal-content">
+            <h3>@(selectedUser.Id == 0 ? "Добавить пользователя" : "Редактировать пользователя")</h3>
+
+            <label>Фамилия:</label>
+            <input @bind="selectedUser.Surname" />
+
+            <label>Имя:</label>
+            <input @bind="selectedUser.Name" />
+
+            <label>Отчество:</label>
+            <input @bind="selectedUser.Patronymic" />
+
+            <label>Должность:</label>
+            <input @bind="selectedUser.Post" />
+
+            <label>Роль:</label>
+            <select @bind="selectedUser.RoleId">
+                <option value="">Выберите роль</option>
+                @foreach (var role in roles)
+                {
+                    <option value="@role.Id">@role.Name</option>
+                }
+            </select>
+
+            <label>Компания:</label>
+            <select @bind="selectedUser.CompanyId">
+                <option value="">Выберите компанию</option>
+                @foreach (var company in companies)
+                {
+                    <option value="@company.Id">@company.Name</option>
+                }
+            </select>
+
+            <button class="save" @onclick="SaveUser">Сохранить</button>
+            <button class="cancel" @onclick="Cancel">Отмена</button>
+        </div>
+    </div>
+}
+
+@code {
+    private List<User> users = new();
+    private List<StaffRole> roles = new();
+    private List<Company> companies = new();
+    private User selectedUser = new();
+    private bool showAddEditDialog = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+        await LoadRoles();
+        await LoadCompanies();
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await Http.GetFromJsonAsync<List<User>>("api/User");
+    }
+
+    private async Task LoadRoles()
+    {
+        roles = await Http.GetFromJsonAsync<List<StaffRole>>("api/StaffRole");
+    }
+
+    private async Task LoadCompanies()
+    {
+        companies = await Http.GetFromJsonAsync<List<Company>>("api/Company");
+    }
+
+    private void AddUser()
+    {
+        selectedUser = new User();
+        showAddEditDialog = true;
+    }
+
+    private async Task EditUser(int id)
+    {
+        selectedUser = await Http.GetFromJsonAsync<User>($"api/User/{id}");
+        showAddEditDialog = true;
+    }
+
+    private async Task SaveUser()
+    {
+        if (selectedUser.Id == 0)
+        {
+            await Http.PostAsJsonAsync("api/User", selectedUser);
+        }
+        else
+        {
+            await Http.PutAsJsonAsync($"api/User/{selectedUser.Id}", selectedUser);
+        }
+
+        showAddEditDialog = false;
+        await LoadUsers();
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        await Http.DeleteAsync($"api/User/{id}");
+        await LoadUsers();
+    }
+
+    private void Cancel()
+    {
+        showAddEditDialog = false;
+    }
+
+    private string GetRoleName(int roleId)
+    {
+        var role = roles.FirstOrDefault(r => r.Id == roleId);
+        return role?.Name ?? "Не указано";
+    }
+
+    private string GetCompanyName(int? companyId)
+    {
+        var company = companies.FirstOrDefault(c => c.Id == companyId);
+        return company?.Name ?? "Не указано";
+    }
+}
